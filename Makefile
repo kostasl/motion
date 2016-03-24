@@ -1,5 +1,3 @@
-CXX=arm-linux-gnueabihf-g++
-
 ################################################################################
 # Makefile for Motion                                                          #
 ################################################################################
@@ -12,38 +10,57 @@ CXX=arm-linux-gnueabihf-g++
 # http://www.lavrsen.dk/twiki/bin/view/Motion                                  #
 ################################################################################
 
-CC      = @CC@
+CC      = gcc
+CCRPI	 = arm-linux-gnueabihf-gcc
 INSTALL = install
 
 ################################################################################
 # Install locations, controlled by setting configure flags.                    #
 ################################################################################
-prefix      = @prefix@
-exec_prefix = @exec_prefix@
-bindir      = @bindir@
-mandir      = @mandir@
-sysconfdir  = @sysconfdir@
-datadir     = @datadir@
-datarootdir = @datarootdir@
-docdir      = $(datadir)/doc/@PACKAGE_NAME@-@PACKAGE_VERSION@ 
-examplesdir = $(datadir)/@PACKAGE_NAME@-@PACKAGE_VERSION@/examples
+prefix      = /usr/local
+builddir    = build
+exec_prefix = ${prefix}
+bindir      = ${exec_prefix}/bin
+mandir      = ${datarootdir}/man
+sysconfdir	= ${prefix}/etc
+sysconfdirRPI	= ${prefix}/etc
+datadir     = ${datarootdir}
+datarootdir = ${prefix}/share
+docdir      = $(datadir)/doc/motion-Git-8619d7c17ce112e7196975905c6e840f345141ba 
+examplesdir = $(datadir)/motion-Git-8619d7c17ce112e7196975905c6e840f345141ba/examples
 
 ################################################################################
 # These variables contain compiler flags, object files to build and files to   #
 # install.                                                                     #
 ################################################################################
-CFLAGS       = @CFLAGS@ -Wall -DVERSION=\"@PACKAGE_VERSION@\" -Dsysconfdir=\"$(sysconfdir)\" 
-LDFLAGS      = @LDFLAGS@
-LIBS         = @LIBS@ 
-VIDEO_OBJ    = @VIDEO@
-OBJ          = motion.o logger.o conf.o draw.o jpegutils.o vloopback_motion.o $(VIDEO_OBJ) \
-			   netcam.o netcam_ftp.o netcam_jpeg.o netcam_wget.o track.o \
-			   alg.o event.o picture.o rotate.o webhttpd.o \
-			   stream.o md5.o @FFMPEG_OBJ@ @SDL_OBJ@
-SRC          = $(OBJ:.o=.c)
+OBJDIR	=$(builddir)
+INCDIR_RPI	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/include
+INCDIR_RPI2	= /home/kostasl/workspace/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/include
+INCDIR_RPI3 	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/include/arm-linux-gnueabihf
+
+LIBDIR_RPI	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/lib/arm-linux-gnueabihf
+
+CFLAGS       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=native -mtune=native -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" 
+
+#For RPI2 -march=armv7-a -mfloat-abi=softfp
+CFLAGSRPI       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=armv7-a -mtune=generic-armv7-a -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" -I $(INCDIR_RPI) -I $(INCDIR_RPI2) -I $(INCDIR_RPI3) -L $(LIBDIR_RPI)
+
+LDFLAGS      =  
+LIBS         = -lm  -lpthread -ljpeg 
+VIDEO_OBJ    = video.o video2.o video_common.o
+
+
+#OBJ          =  motion.o logger.o conf.o draw.o jpegutils.o vloopback_motion.o $(VIDEO_OBJ) \
+#			   netcam.o netcam_ftp.o netcam_jpeg.o netcam_wget.o track.o \
+#			   alg.o event.o picture.o rotate.o webhttpd.o \
+#			   stream.o md5.o  
+OBJ          = $(addprefix $(OBJDIR)/, motion.o logger.o conf.o draw.o jpegutils.o vloopback_motion.o $(VIDEO_OBJ) netcam.o netcam_ftp.o netcam_jpeg.o netcam_wget.o track.o alg.o event.o picture.o rotate.o webhttpd.o stream.o md5.o  )
+
+SRC          = $(.o=.c)
 DOC          = CHANGELOG COPYING CREDITS INSTALL README motion_guide.html
 EXAMPLES     = *.conf motion.init-Debian motion.init-Fedora motion.init-FreeBSD.sh
-PROGS        = motion
+PROGS        = larmotion
+PROGSRPI     = larmotion-rpi
 DEPEND_FILE  = .depend
 
 ################################################################################
@@ -60,6 +77,16 @@ endif
 progs: pre-build-info $(PROGS)
 
 ################################################################################
+# ALL and PROGS build Motion and, possibly, Motion-control.                    #
+################################################################################
+rpi: progs-rpi
+	@echo "Build complete, run \"gmake install\" to install Motion!"
+	@echo
+
+progs-rpi: pre-build-info-rpi $(PROGSRPI)
+
+
+################################################################################
 # PRE-BUILD-INFO outputs some general info before the build process starts.    #
 ################################################################################
 pre-build-info: 
@@ -68,7 +95,7 @@ pre-build-info:
 	@echo "Motion Guide contains all information you should need to get Motion up and running."
 	@echo "Run \"make updateguide\" to download the latest version of the Motion Guide."
 	@echo
-	@echo "Version: @PACKAGE_VERSION@"
+	@echo "Version: Git-8619d7c17ce112e7196975905c6e840f345141ba"
 ifneq (,$(findstring freebsd,$(VIDEO_OBJ)))
 	@echo "Platform: FreeBSD"
 else
@@ -77,15 +104,30 @@ endif
 	@echo
 
 ################################################################################
+# PRE-BUILD-INFO RPI outputs some general info before the build process starts.    #
+################################################################################
+pre-build-info-rpi: 
+	@echo "Welcome to the setup procedure for Motion, the motion detection daemon! If you get"
+	@echo "error messages during this procedure, please report them to the mailing list. The"
+	@echo "Motion Guide contains all information you should need to get Motion up and running."
+	@echo "Run \"make updateguide\" to download the latest version of the Motion Guide."
+	@echo
+	@echo "Version: Git-8619d7c17ce112e7196975905c6e840f345141ba"
+	@echo "Platform: Raspberry Pi 2 : ARM 7"
+	@echo
+
+
+################################################################################
 # MOTION builds motion. MOTION-OBJECTS and PRE-MOBJECT-INFO are helpers.       #
 ################################################################################
-motion: motion-objects
+larmotion: motion-objects
 	@echo "Linking Motion..."
 	@echo "--------------------------------------------------------------------------------"
-	$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
+	$(CC) $(LDFLAGS) -o $(addprefix $(OBJDIR)/, $@) $(OBJ) $(LIBS)
 	@echo "--------------------------------------------------------------------------------"
 	@echo "Motion has been linked."
 	@echo
+
 
 motion-objects: dep pre-mobject-info $(OBJ)
 	@echo "--------------------------------------------------------------------------------"
@@ -102,6 +144,9 @@ pre-mobject-info:
 #%.o: %.c
 #	@echo -e "\tCompiling $< into $@..."
 #	@$(CC) -c $(CFLAGS) $< -o $@
+#$(OBJDIR)/%.o: %.c
+#	@echo -e "\tCompiling $< into $@..."
+#	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 ################################################################################
 # Include the dependency file if it exists.                                    #
@@ -112,22 +157,77 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 endif
 endif
 
+##########################################
+# MOTION For RASPBERRY PI CROSS COMPILATION
+#####################################
+larmotion-rpi: motion-objects-rpi
+	@echo "Linking Motion for raspberry pi..."
+	@echo "--------------------------------------------------------------------------------"
+	$(CCRPI) $(LDFLAGS) -o $(addprefix $(OBJDIR)/, $@) $(OBJ) $(LIBS)
+	@echo "--------------------------------------------------------------------------------"
+	@echo "Motion for RPI has been linked ."
+	@echo
+
+motion-objects-rpi: dep-rpi pre-mobject-info-rpi $(OBJ)
+	@echo "--------------------------------------------------------------------------------"
+	@echo "Motion for RPI object files compiled."
+	@echo
+
+pre-mobject-info-rpi:
+	@echo "Compiling Motion for RPI object files..."
+	@echo "--------------------------------------------------------------------------------"
+################################################################################
+# Define the compile command for C files.                                      #
+################################################################################
+#%.o: %.c
+#	@echo -e "\tCompiling $< into $@..."
+#	@$(CC) -c $(CFLAGS) $< -o $@
+$(OBJDIR)/%.o: %.c
+	@echo -e "\tCompiling $< into $@..."
+	$(CCRPI) $(CFLAGSRPI) $(CPPFLAGS) -c -o $@ $<
+
+################################################################################
+# Include the dependency file if it exists.                                    #
+################################################################################
+ifeq ($(DEPEND_FILE_RPI), $(wildcard $(DEPEND_FILE_RPI)))
+ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+-include $(DEPEND_FILE_RPI)
+endif
+endif
+
+
+
+
 ################################################################################
 # Make the dependency file depend on all header files and all relevant source  #
 # files. This forces the file to be re-generated if the source/header files    #
 # change. Note, however, that the existing version will be included before     #
 # re-generation.                                                               #
 ################################################################################
+	
 $(DEPEND_FILE): *.h $(SRC)
-	@echo "Generating dependencies, please wait..."
-	@$(CC) $(CFLAGS) -M $(SRC) > .tmp
+	@echo "Generating dependencies into $@, please wait..."
+	@$(CC) $(CFLAGS) -M $(SRC) -o $@ > .tmp 
 	@mv -f .tmp $(DEPEND_FILE)
 	@echo
+
+	
+$(DEPEND_FILE_RPI): *.h $(SRC)
+	@echo "Generating dependencies for RPI into $@, please wait..."
+	@$(CCRPI) $(CFLAGSRPI) -M $(SRC) -o $@ > .tmp 
+	@mv -f .tmp $(DEPEND_FILE_RPI)
+	@echo
+
 
 ################################################################################
 # DEP, DEPEND and FASTDEP generate the dependency file.                        #
 ################################################################################
 dep depend fastdep: $(DEPEND_FILE)
+
+################################################################################
+# DEP, DEPEND and FASTDEP generate the dependency file FOR RPI.                #
+################################################################################
+dep-rpi depend-rpi fastdep-rpi: $(DEPEND_FILE_RPI)
 
 
 ################################################################################
@@ -182,7 +282,8 @@ set-version-git:
 
 help:
 	@echo "--------------------------------------------------------------------------------"
-	@echo "make                   Build motion from local copy in your computer"	
+	@echo "make                   Build motion from local copy in your computer"
+	@echo "make rpi               Cross Build motion from local copy in your computer for RPI 2"		
 	@echo "make current           Build last version of motion from svn"
 	@echo "make dev               Build motion with dev flags"
 	@echo "make dev-git           Build motion with dev flags for git"
