@@ -45,9 +45,10 @@ CFLAGS       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT
 #For RPI2 -march=armv7-a -mfloat-abi=softfp
 CFLAGSRPI       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=armv7-a -mtune=generic-armv7-a -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" -I $(INCDIR_RPI) -I $(INCDIR_RPI2) -I $(INCDIR_RPI3) -L $(LIBDIR_RPI)
 
-LDFLAGS      =  
-LIBS         = -lm  -lpthread -ljpeg 
-VIDEO_OBJ    = video.o video2.o video_common.o
+LDFLAGS      	=
+LDFLAGS_RPI	= -L $(LIBDIR_RPI)
+LIBS         	= -lm  -lpthread -ljpeg 
+VIDEO_OBJ    	= video.o video2.o video_common.o
 
 
 #OBJ          =  motion.o logger.o conf.o draw.o jpegutils.o vloopback_motion.o $(VIDEO_OBJ) \
@@ -163,7 +164,7 @@ endif
 larmotion-rpi: motion-objects-rpi
 	@echo "Linking Motion for raspberry pi..."
 	@echo "--------------------------------------------------------------------------------"
-	$(CCRPI) $(LDFLAGS) -o $(addprefix $(OBJDIR)/, $@) $(OBJ) $(LIBS)
+	$(CCRPI) $(LDFLAGS_RPI) -o $(addprefix $(OBJDIR)/, $@) $(OBJ) $(LIBS)
 	@echo "--------------------------------------------------------------------------------"
 	@echo "Motion for RPI has been linked ."
 	@echo
