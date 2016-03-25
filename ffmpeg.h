@@ -6,6 +6,7 @@
 
 #ifdef FFMPEG_NEW_INCLUDES
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h> //KL Added
 #else
 #include <avformat.h>
 #endif

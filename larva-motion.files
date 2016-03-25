@@ -47,3 +47,5 @@ vloopback_motion.c
 vloopback_motion.h
 webhttpd.c
 webhttpd.h
+Makefile.in
+configure.in

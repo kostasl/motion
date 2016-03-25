@@ -35,19 +35,28 @@ examplesdir = $(datadir)/motion-Git-8619d7c17ce112e7196975905c6e840f345141ba/exa
 ################################################################################
 OBJDIR	=$(builddir)
 INCDIR_RPI	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/include
+INCDIR_RPI1	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/local/include
 INCDIR_RPI2	= /home/kostasl/workspace/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/include
 INCDIR_RPI3 	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/include/arm-linux-gnueabihf
 
 LIBDIR_RPI	= /home/kostasl/workspace/raspberrypi/mntrpi/usr/lib/arm-linux-gnueabihf
 
-CFLAGS       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=native -mtune=native -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" 
+CFLAGS       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP -DHAVE_FFMPEG -DHAVE_FFMPEG_NEW  -march=native -mtune=native -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" 
 
-#For RPI2 -march=armv7-a -mfloat-abi=softfp
-CFLAGSRPI       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=armv7-a -mtune=generic-armv7-a -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" -I $(INCDIR_RPI) -I $(INCDIR_RPI2) -I $(INCDIR_RPI3) -L $(LIBDIR_RPI)
+#-L/mntrpi/usr/lib/arm-linux-gnueabihf
+FFMPEG_LIB =  -lavformat -lavcodec -lavutil -lm -lz
+FFMPEG_OBJ = ffmpeg.o
+
+########RPI 2 ###########
+###I Run Config on RPI 2 Got :
+#CFLAGS:  -g -O2 -D_REENTRANT -DHAVE_FFMPEG -I/usr/local/include -DFFMPEG_NEW_INCLUDES -DHAVE_FFMPEG_NEW -#DMOTION_V4L2 -DMOTION_V4L2_OLD -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=native -mtune=native
+# For Cross-Compile I use : -march=armv7-a -mfloat-abi=softfp
+CFLAGSRPI       =  -g -O2 -D_REENTRANT -DMOTION_V4L2 -DMOTION_V4L2_OLD -DHAVE_FFMPEG -DFFMPEG_NEW_INCLUDES -DHAVE_FFMPEG_NEW -DTYPE_32BIT="int" -DHAVE_BSWAP   -march=armv7-a -mtune=generic-armv7-a -Wall -DVERSION=\"Git-8619d7c17ce112e7196975905c6e840f345141ba\" -Dsysconfdir=\"$(sysconfdir)\" -I $(INCDIR_RPI) -I $(INCDIR_RPI2) -I $(INCDIR_RPI3) -L $(LIBDIR_RPI)
+
 
 LDFLAGS      	=
 LDFLAGS_RPI	= -L $(LIBDIR_RPI)
-LIBS         	= -lm  -lpthread -ljpeg 
+LIBS         	= -lm  -lpthread -ljpeg $(FFMPEG_LIB)
 VIDEO_OBJ    	= video.o video2.o video_common.o
 
 
@@ -55,7 +64,7 @@ VIDEO_OBJ    	= video.o video2.o video_common.o
 #			   netcam.o netcam_ftp.o netcam_jpeg.o netcam_wget.o track.o \
 #			   alg.o event.o picture.o rotate.o webhttpd.o \
 #			   stream.o md5.o  
-OBJ          = $(addprefix $(OBJDIR)/, motion.o logger.o conf.o draw.o jpegutils.o vloopback_motion.o $(VIDEO_OBJ) netcam.o netcam_ftp.o netcam_jpeg.o netcam_wget.o track.o alg.o event.o picture.o rotate.o webhttpd.o stream.o md5.o  )
+OBJ          = $(addprefix $(OBJDIR)/, motion.o logger.o conf.o draw.o jpegutils.o vloopback_motion.o $(VIDEO_OBJ) netcam.o netcam_ftp.o netcam_jpeg.o netcam_wget.o track.o alg.o event.o picture.o rotate.o webhttpd.o stream.o md5.o  $(FFMPEG_OBJ))
 
 SRC          = $(.o=.c)
 DOC          = CHANGELOG COPYING CREDITS INSTALL README motion_guide.html
